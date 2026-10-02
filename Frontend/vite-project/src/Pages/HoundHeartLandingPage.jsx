@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Country, State, City } from 'country-state-city';
 import apiService from '../services/apiService';
 import toast from '../services/toastService';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import HoundHeartLogo from '../assets/images/Houndheart_logo.svg';
+import { OPEN_PRE_REGISTER_EVENT } from '../components/SiteHeader';
 
 // Add validation styling for better visibility
 const validationStyles = `
@@ -159,35 +159,20 @@ function EarlyMemberBanner({ offerConfig, billingPeriod, onClaim }) {
   // Hero Section Component
   const HeroSection = ({ onGetStarted }) => {
     const [isMuted, setIsMuted] = React.useState(false);
-    const [videoUrl, setVideoUrl] = React.useState(() => {
-      //   // On component mount, immediately load from sessionStorage if available
-      //   // This makes every repeat visit within 7 days completely instant
-      const cached = sessionStorage.getItem('hh_video_url');
-      const cachedAt = sessionStorage.getItem('hh_video_url_ts');
-      const sevenDays = 7 * 24 * 60 * 60 * 1000;
-      if (cached && cachedAt && (Date.now() - Number(cachedAt)) < sevenDays) {
-        return cached;
-      }
-      return null;
-    });
     const videoRef = React.useRef(null);
+    const [videoSrc, setVideoSrc] = React.useState(null);
 
+    // Attach the video only after the page has loaded so it doesn't compete with critical resources.
     useEffect(() => {
-      //   // Only fetch if we don't already have a valid cached URL
-      if (videoUrl) return;
-      const fetchVideo = async () => {
-        try {
-          const response = await apiService.makeRequest('/PublicAssets/marketing-video', { method: 'GET' });
-          if (response && response.data && response.data.url) {
-            sessionStorage.setItem('hh_video_url', response.data.url);
-            sessionStorage.setItem('hh_video_url_ts', String(Date.now()));
-            setVideoUrl(response.data.url);
-          }
-        } catch (error) {
-          console.error('Failed to fetch marketing video url', error);
-        }
+      const attachVideo = () => {
+        setVideoSrc(window.matchMedia('(max-width: 767px)').matches ? '/houndheart-video-720.mp4' : '/houndheart-video.mp4');
       };
-      fetchVideo();
+      if (document.readyState === 'complete') {
+        attachVideo();
+        return undefined;
+      }
+      window.addEventListener('load', attachVideo, { once: true });
+      return () => window.removeEventListener('load', attachVideo);
     }, []);
 
     const [isPlaying, setIsPlaying] = React.useState(true);
@@ -322,7 +307,8 @@ function EarlyMemberBanner({ offerConfig, billingPeriod, onClaim }) {
           >
             <video
               ref={videoRef}
-              src="/houndheart-video.mp4"
+              src={videoSrc || undefined}
+              poster="/houndheart-video-poster.webp"
               autoPlay
               loop
               muted={isMuted}
@@ -574,13 +560,18 @@ const HoundHeartLandingPage = () => {
     };
     fetchOfferConfig();
   }, []);
-  const countries = useMemo(() => Country.getAllCountries(), []);
-  const states = useMemo(() => (selectedCountryCode ? State.getStatesOfCountry(selectedCountryCode) : []), [selectedCountryCode]);
+  const [locationData, setLocationData] = useState(null);
+  useEffect(() => {
+    if (!showPreRegisterModal || locationData) return;
+    import('country-state-city').then(setLocationData);
+  }, [showPreRegisterModal, locationData]);
+  const countries = useMemo(() => (locationData ? locationData.Country.getAllCountries() : []), [locationData]);
+  const states = useMemo(() => (locationData && selectedCountryCode ? locationData.State.getStatesOfCountry(selectedCountryCode) : []), [locationData, selectedCountryCode]);
   const cities = useMemo(() => (
-    selectedCountryCode && selectedStateCode
-      ? City.getCitiesOfState(selectedCountryCode, selectedStateCode)
+    locationData && selectedCountryCode && selectedStateCode
+      ? locationData.City.getCitiesOfState(selectedCountryCode, selectedStateCode)
       : []
-  ), [selectedCountryCode, selectedStateCode]);
+  ), [locationData, selectedCountryCode, selectedStateCode]);
   const fixedPlans = useMemo(() => ([
     {
       planId: 'free-member',
@@ -666,6 +657,16 @@ const HoundHeartLandingPage = () => {
     }
   };
 
+  const location = useLocation();
+  const { hash } = location;
+  useEffect(() => {
+    if (!hash) return undefined;
+    const timer = setTimeout(() => {
+      document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [hash]);
+
   // Scroll animation effect
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -710,6 +711,21 @@ const HoundHeartLandingPage = () => {
     setShowPreRegisterDetails(false);
     setShowPreRegisterModal(true);
   };
+
+  const openPreRegisterRef = useRef(handleOpenPreRegister);
+  openPreRegisterRef.current = handleOpenPreRegister;
+
+  useEffect(() => {
+    const handleOpenRequest = () => openPreRegisterRef.current();
+    window.addEventListener(OPEN_PRE_REGISTER_EVENT, handleOpenRequest);
+    return () => window.removeEventListener(OPEN_PRE_REGISTER_EVENT, handleOpenRequest);
+  }, []);
+
+  useEffect(() => {
+    if (!location.state?.openPreRegister) return;
+    openPreRegisterRef.current();
+    navigate(`${location.pathname}${location.hash}`, { replace: true, state: null });
+  }, [location.state, location.pathname, location.hash, navigate]);
 
   const handleClosePreRegisterModal = () => {
     setSelectedCountryCode('');
@@ -895,35 +911,8 @@ const HoundHeartLandingPage = () => {
   };
 
 
-  const handleFeaturesClick = () => {
-    // Scroll to the Transform Your Connection section
-    const featuresSection = document.getElementById('transform-section');
-    if (featuresSection) {
-      featuresSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
-  };
-
   const handleAboutClick = () => {
     navigate('/about-us');
-  };
-
-  const handleAboutNavClick = () => {
-    // Scroll to the About section on the same page
-    const aboutSection = document.getElementById('about-section');
-    if (aboutSection) {
-      aboutSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
-  };
-
-  const handleFooterNavigation = (path) => {
-    navigate(path);
-    window.scrollTo(0, 0);
   };
 
   const handleHomeClick = () => {
@@ -959,7 +948,7 @@ const HoundHeartLandingPage = () => {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Why HoundHeart™?</h2>
-          <h2 className="text-xl text-gray-600 max-w-4xl mx-auto">HoundHeart helps you unlock the remarkable emotional and physical health benefits of the human–dog bond through science, mindful practices, and shared experiences.</h2>
+          <p className="text-xl text-gray-600 max-w-4xl mx-auto">HoundHeart helps you unlock the remarkable emotional and physical health benefits of the human–dog bond through science, mindful practices, and shared experiences.</p>
 
         </div>
 
@@ -1692,9 +1681,9 @@ const HoundHeartLandingPage = () => {
             />
             <label htmlFor="terms" className="text-sm text-gray-600">
               I accept the{' '}
-              <button onClick={() => handleFooterNavigation('/terms-of-use')} className="text-purple-500 hover:text-purple-600 font-medium">
+              <Link to="/terms-of-use" onClick={() => window.scrollTo(0, 0)} className="text-purple-500 hover:text-purple-600 font-medium">
                 Terms of Service
-              </button>
+              </Link>
               {' '}and{' '}
               <button
                 onClick={() => navigate('/privacy-policy')}
@@ -1764,77 +1753,6 @@ const HoundHeartLandingPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-100 py-4 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            {/* Left Side - Logo */}
-            <div className="flex items-center space-x-3 group cursor-pointer">
-              <img
-                src={HoundHeartLogo}
-                alt="HoundHeart Logo"
-                className="w-10 h-10 group-hover:scale-110 transition-transform duration-300"
-              />
-              <h1 className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors duration-300">HoundHeart™</h1>
-            </div>
-
-            {/* Center - Navigation */}
-            <nav className="hidden md:flex space-x-8">
-              <button
-                onClick={handleAboutNavClick}
-                className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 cursor-pointer relative group"
-              >
-                About
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300"></span>
-              </button>
-              <button
-                onClick={handleFeaturesClick}
-                className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 cursor-pointer relative group"
-              >
-                Features
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300"></span>
-              </button>
-              <button
-                onClick={handlePricingClick}
-                className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 cursor-pointer relative group"
-              >
-                Online Pricing
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300"></span>
-              </button>
-              {/* <button
-                onClick={handlePremiumClick}
-                className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 cursor-pointer relative group"
-              >
-                Premium
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300"></span>
-              </button> */}
-            </nav>
-
-            {/* Right Side - Login/Register + Launch CTA */}
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleOpenPreRegister}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:from-pink-600 hover:to-purple-600 transition-all duration-300"
-              >
-                {launchFlags.ctaLabel}
-              </button>
-
-              <div className="flex items-center space-x-2 group">
-                <svg className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <button
-                  onClick={handleLogin}
-                  className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 hover:scale-105"
-                >
-                  Login/Register
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Content Order: Always show Hero Section first, then other sections */}
       <>
         {/* Hero Section Always First */}
@@ -2119,6 +2037,9 @@ const HoundHeartLandingPage = () => {
               </span>
               <button
                 onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'yearly' : 'monthly')}
+                role="switch"
+                aria-checked={billingPeriod === 'yearly'}
+                aria-label="Show yearly pricing"
                 className="relative w-14 h-7 bg-purple-600 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               >
                 <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 ease-in-out ${billingPeriod === 'yearly' ? 'transform translate-x-7' : ''
@@ -2253,45 +2174,45 @@ const HoundHeartLandingPage = () => {
       <footer className="bg-black text-white py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Top Section */}
-          <div className="flex justify-between items-start mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8 md:gap-0 mb-8">
             {/* Left Section - Branding and Social */}
             <div className="space-y-4">
               {/* Logo and Brand */}
-              <div className="flex items-center space-x-3">
+              <Link to="/" onClick={handleHomeClick} className="flex items-center space-x-3">
                 <div className="w-18 h-18  rounded-full flex items-center justify-center">
                   <img src={HoundHeartLogo} alt="HoundHeart Logo" className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">HoundHeart™</h3>
+                  <div className="text-xl font-bold text-white">HoundHeart™</div>
                   <p className="text-gray-300 text-sm">Heal the Bond, Not Just the Bark</p>
                 </div>
-              </div>
+              </Link>
 
               {/* Social Media Icons */}
               <div className="flex space-x-4">
                 {/* Facebook Icon */}
-                <a href="#" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on Facebook" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
                 </a>
 
                 {/* Twitter Icon */}
-                <a href="#" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on Twitter" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                   </svg>
                 </a>
 
                 {/* Instagram Icon */}
-                <a href="#" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on Instagram" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                   </svg>
                 </a>
 
                 {/* LinkedIn Icon */}
-                <a href="#" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on LinkedIn" className="w-12 h-12  rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
@@ -2305,9 +2226,9 @@ const HoundHeartLandingPage = () => {
               <div>
                 <h4 className="font-semibold mb-4 text-white">Company</h4>
                 <ul className="space-y-2 text-gray-300">
-                  <li><button onClick={() => handleFooterNavigation('/about-us')} className="hover:text-white transition-colors">About Us</button></li>
-                  <li><button onClick={() => handleFooterNavigation('/privacy-policy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
-                  <li><button onClick={() => handleFooterNavigation('/terms-of-use')} className="hover:text-white transition-colors">Terms of Service</button></li>
+                  <li><Link to="/about-us" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors">About Us</Link></li>
+                  <li><Link to="/privacy-policy" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                  <li><Link to="/terms-of-use" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors">Terms of Service</Link></li>
                 </ul>
               </div>
 
@@ -2315,9 +2236,9 @@ const HoundHeartLandingPage = () => {
               <div>
                 <h4 className="font-semibold mb-4 text-white">Support</h4>
                 <ul className="space-y-2 text-gray-300">
-                  <li><button onClick={() => handleFooterNavigation('/help-center')} className="hover:text-white transition-colors">Help Center</button></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Healing Circles</a></li>
-                  <li><button onClick={() => handleFooterNavigation('/community-guidelines')} className="hover:text-white transition-colors">Community Guidelines</button></li>
+                  <li><Link to="/help-center" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors">Help Center</Link></li>
+                  <li><Link to="/community" className="hover:text-white transition-colors">Healing Circles</Link></li>
+                  <li><Link to="/community-guidelines" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors">Community Guidelines</Link></li>
                 </ul>
               </div>
             </div>
@@ -2329,12 +2250,10 @@ const HoundHeartLandingPage = () => {
           {/* Bottom Section */}
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-300 text-sm mb-4 md:mb-0">
-              © 2025 HoundHeart™. All rights reserved. Heal the Bond, Not Just the Bark.
+              © {new Date().getFullYear()} HoundHeart™. All rights reserved. Heal the Bond, Not Just the Bark.
             </p>
             <div className="flex space-x-6">
-              <button onClick={() => handleFooterNavigation('/privacy-policy')} className="text-gray-300 hover:text-white text-sm transition-colors">Privacy Policy</button>
-              <a href="#" className="text-gray-300 hover:text-white text-sm transition-colors">Cookie Policy</a>
-              <button onClick={() => handleFooterNavigation('/terms-of-use')} className="text-gray-300 hover:text-white text-sm transition-colors">Terms and Conditions</button>
+              <Link to="/privacy-policy" onClick={() => window.scrollTo(0, 0)} className="text-gray-300 hover:text-white text-sm transition-colors">Cookie Policy</Link>
             </div>
           </div>
         </div>

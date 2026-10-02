@@ -1,60 +1,89 @@
-import React from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import './index.css';
 import apiService from './services/apiService';
 import HoundHeartLandingPage from './Pages/HoundHeartLandingPage';
-import LoginPage from './Pages/LoginPage';
-import SignupPage from './Pages/SignupPage';
-import EmailVerificationPage from './Pages/EmailVerificationPage';
-import ProfileSetupPage from './Pages/ProfileSetupPage';
-import ProfileSettingsPage from './Pages/ProfileSettingsPage';
-import DashboardPage from './Pages/DashboardPage';
-import ChakraRitualsPage from './Pages/ChakraRitualsPage';
-import JournalPage from './Pages/JournalPage';
-import CommunityPage from './Pages/CommunityPage';
-import AskExpertPage from './Pages/AskExpertPage';
-import CoursesPage from './Pages/CoursesPage';
-import WellnessGuidePage from './Pages/WellnessGuidePage';
-import WellnessCheckPage from './Pages/WellnessCheckPage';
-import DetailedAnalysisPage from './Pages/DetailedAnalysisPage';
-import SubscriptionPage from './Pages/SubscriptionPage';
-import SubscriptionSuccessPage from './Pages/SubscriptionSuccessPage';
-import SubscriptionCancelPage from './Pages/SubscriptionCancelPage';
-import SubscriptionPortalReturnPage from './Pages/SubscriptionPortalReturnPage';
-import BondAnalyticsPage from './Pages/BondAnalyticsPage';
-import WearableIntegrationPage from './Pages/WearableIntegrationPage';
 import PrivacyPolicyPage from './Pages/PrivacyPolicyPage';
 import CommunityGuidelinesPage from './Pages/CommunityGuidelinesPage';
 import HelpCenterPage from './Pages/HelpCenterPage';
 import AboutUsPage from './Pages/AboutUsPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import Navbar from './components/Navbar';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import WelcomePage from './Pages/WelcomePage';
-import TravelClubPage from './Pages/TravelClubPage';
-import WearableMarketplacePage from './Pages/WearableMarketplacePage';
-import OnlineStorePage from './Pages/OnlineStorePage';
-import BooksLibraryPage from './Pages/BooksLibraryPage';
-import LegacyProjectPage from './Pages/LegacyProjectPage';
-import GriefSupportPage from './Pages/GriefSupportPage';
+import SiteHeader from './components/SiteHeader';
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, matchRoutes } from 'react-router-dom';
+import NotFoundPage from './Pages/NotFoundPage';
+import { PUBLIC_PAGES } from './seo/seoConfig';
+import { APP_ROUTES } from './seo/routes';
+import { applySeo } from './seo/applySeo';
 import { NotificationPopupProvider } from './hooks/useNotificationPopup';
 import NotificationPopup from './components/NotificationPopup';
-import BookSession from './Pages/BookSession';
-import VideoCall from './Pages/VideoCall';
-import SessionEnded from './Pages/SessionEnded';
 import ExpertSessionNotificationPoller from './components/ExpertSessionNotificationPoller';
 
-import ExpertBookSessionPage from './Pages/ExpertBookSessionPage';
-import ExpertSessionSlotsPage from './Pages/ExpertSessionSlotsPage';
-import ExpertMySessionsPage from './Pages/ExpertMySessionsPage';
-import ExpertVideoCallPage from './Pages/ExpertVideoCallPage';
+const LoginPage = lazy(() => import('./Pages/LoginPage'));
+const SignupPage = lazy(() => import('./Pages/SignupPage'));
+const EmailVerificationPage = lazy(() => import('./Pages/EmailVerificationPage'));
+const ProfileSetupPage = lazy(() => import('./Pages/ProfileSetupPage'));
+const ProfileSettingsPage = lazy(() => import('./Pages/ProfileSettingsPage'));
+const DashboardPage = lazy(() => import('./Pages/DashboardPage'));
+const ChakraRitualsPage = lazy(() => import('./Pages/ChakraRitualsPage'));
+const JournalPage = lazy(() => import('./Pages/JournalPage'));
+const CommunityPage = lazy(() => import('./Pages/CommunityPage'));
+const AskExpertPage = lazy(() => import('./Pages/AskExpertPage'));
+const CoursesPage = lazy(() => import('./Pages/CoursesPage'));
+const WellnessGuidePage = lazy(() => import('./Pages/WellnessGuidePage'));
+const WellnessCheckPage = lazy(() => import('./Pages/WellnessCheckPage'));
+const DetailedAnalysisPage = lazy(() => import('./Pages/DetailedAnalysisPage'));
+const SubscriptionPage = lazy(() => import('./Pages/SubscriptionPage'));
+const SubscriptionSuccessPage = lazy(() => import('./Pages/SubscriptionSuccessPage'));
+const SubscriptionCancelPage = lazy(() => import('./Pages/SubscriptionCancelPage'));
+const SubscriptionPortalReturnPage = lazy(() => import('./Pages/SubscriptionPortalReturnPage'));
+const BondAnalyticsPage = lazy(() => import('./Pages/BondAnalyticsPage'));
+const WearableIntegrationPage = lazy(() => import('./Pages/WearableIntegrationPage'));
+const WelcomePage = lazy(() => import('./Pages/WelcomePage'));
+const TravelClubPage = lazy(() => import('./Pages/TravelClubPage'));
+const WearableMarketplacePage = lazy(() => import('./Pages/WearableMarketplacePage'));
+const OnlineStorePage = lazy(() => import('./Pages/OnlineStorePage'));
+const BooksLibraryPage = lazy(() => import('./Pages/BooksLibraryPage'));
+const LegacyProjectPage = lazy(() => import('./Pages/LegacyProjectPage'));
+const GriefSupportPage = lazy(() => import('./Pages/GriefSupportPage'));
+const BookSession = lazy(() => import('./Pages/BookSession'));
+const VideoCall = lazy(() => import('./Pages/VideoCall'));
+const SessionEnded = lazy(() => import('./Pages/SessionEnded'));
+const ExpertBookSessionPage = lazy(() => import('./Pages/ExpertBookSessionPage'));
+const ExpertSessionSlotsPage = lazy(() => import('./Pages/ExpertSessionSlotsPage'));
+const ExpertMySessionsPage = lazy(() => import('./Pages/ExpertMySessionsPage'));
+const ExpertVideoCallPage = lazy(() => import('./Pages/ExpertVideoCallPage'));
 
-// Pages that should NOT show the global Navbar
-const NO_NAVBAR_PATHS = ['/', '/login', '/signup', '/verify-email', '/welcome', '/profile-setup'];
+const SiteLayout = () => (
+  <>
+    <SiteHeader />
+    <Suspense fallback={null}>
+      <Outlet />
+    </Suspense>
+  </>
+);
+
+const KNOWN_ROUTES = [...Object.keys(PUBLIC_PAGES), ...APP_ROUTES].map((path) => ({ path }));
+
+const prefetchAuthPages = () => {
+  import('./Pages/LoginPage');
+  import('./Pages/SignupPage');
+};
 
 const AppContent = () => {
   const location = useLocation();
   const isAuthenticated = apiService.isAuthenticated();
-  const isPolicyPage = ['/privacy-policy', '/privacy-policy-full', '/terms-of-use'].includes(location.pathname);
+  const isNotFound = !matchRoutes(KNOWN_ROUTES, location);
+
+  useEffect(() => {
+    applySeo(location.pathname, { notFound: isNotFound });
+  }, [location.pathname, isNotFound]);
+
+  useEffect(() => {
+    const schedule = window.requestIdleCallback || ((cb) => setTimeout(cb, 2000));
+    const onLoad = () => schedule(prefetchAuthPages);
+    if (document.readyState === 'complete') onLoad();
+    else window.addEventListener('load', onLoad, { once: true });
+    return () => window.removeEventListener('load', onLoad);
+  }, []);
   
   // Check if user is in registration flow
   const inRegistrationFlow = 
@@ -64,22 +93,20 @@ const AppContent = () => {
   // Effective authentication for UI purposes
   const isEffectivelyAuthenticated = isAuthenticated && !inRegistrationFlow;
 
-  // Pages that inherently don't show the global Navbar
-  const isNoNavbarPath = NO_NAVBAR_PATHS.includes(location.pathname);
-  
-  // Show Navbar if it's not a NO_NAVBAR path.
-  // For policy pages, only show the Navbar if the user is effectively authenticated.
-  const showNavbar = !isNoNavbarPath && !(isPolicyPage && !isEffectivelyAuthenticated);
-
   return (
     <>
-      {showNavbar && <Navbar />}
       {isEffectivelyAuthenticated && <ExpertSessionNotificationPoller />}
+      <Suspense fallback={null}>
       <Routes>
-        {/* Not under protected routing */}
-        <Route path="/" element={<HoundHeartLandingPage />} />
+        {/* Popup-style and full-screen pages without the site header */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/video-call" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
+        <Route path="/expert-video-call" element={<ProtectedRoute><ExpertVideoCallPage /></ProtectedRoute>} />
+
+        <Route element={<SiteLayout />}>
+        {/* Not under protected routing */}
+        <Route path="/" element={<HoundHeartLandingPage />} />
         <Route path="/verify-email" element={<EmailVerificationPage />} />
 
         {/* under protected routing */}
@@ -101,7 +128,7 @@ const AppContent = () => {
         <Route path="/subscription/portal-return" element={<ProtectedRoute><SubscriptionPortalReturnPage /></ProtectedRoute>} />
         <Route path="/sync-score" element={<ProtectedRoute requiredTier="plus"><BondAnalyticsPage /></ProtectedRoute>} />
         <Route path="/integrations" element={<ProtectedRoute requiredTier="plus"><WearableIntegrationPage /></ProtectedRoute>} />
-        <Route path="/community-guidelines" element={<ProtectedRoute><CommunityGuidelinesPage /></ProtectedRoute>} />
+        <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
 
         {/* Coming Soon / Phase 2 Features */}
         <Route path="/travel-club" element={<ProtectedRoute><TravelClubPage /></ProtectedRoute>} />
@@ -113,8 +140,6 @@ const AppContent = () => {
 
         {/* Video Consultation */}
         <Route path="/book-session" element={<ProtectedRoute><BookSession /></ProtectedRoute>} />
-        <Route path="/video-call" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
-        <Route path="/expert-video-call" element={<ProtectedRoute><ExpertVideoCallPage /></ProtectedRoute>} />
         <Route path="/session-ended" element={<ProtectedRoute><SessionEnded /></ProtectedRoute>} />
 
         {/* Expert Session Booking Feature */}
@@ -125,21 +150,27 @@ const AppContent = () => {
         {/* Public or informational pages */}
         <Route path="/help-center" element={<HelpCenterPage />} />
         <Route path="/about-us" element={<AboutUsPage />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicyPage key="privacy-policy" showHeaderFooter={!isEffectivelyAuthenticated} />} />
-        <Route path="/privacy-policy-full" element={<PrivacyPolicyPage showHeaderFooter={false} />} />
-        <Route path="/terms-of-use" element={<PrivacyPolicyPage key="terms-of-use" showHeaderFooter={!isEffectivelyAuthenticated} initialTab="houndheart" />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage key="privacy-policy" showFooter />} />
+        <Route path="/privacy-policy-full" element={<PrivacyPolicyPage showFooter={false} />} />
+        <Route path="/terms-of-use" element={<PrivacyPolicyPage key="terms-of-use" showFooter initialTab="houndheart" />} />
+
+        <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Routes>
+      </Suspense>
     </>
   );
 };
 
-const App = () => {
+// The prerender build passes a StaticRouter so the server HTML matches what the client hydrates.
+const App = (props) => {
+  const { RouterComponent = Router, routerProps } = props;
   return (
     <NotificationPopupProvider>
       <div>
-        <Router>
+        <RouterComponent {...routerProps}>
           <AppContent />
-        </Router>
+        </RouterComponent>
         <NotificationPopup />
       </div>
     </NotificationPopupProvider>

@@ -95,6 +95,7 @@ Frontend/**/bower_components/
 # Build output
 Frontend/**/dist/
 Frontend/**/dist-ssr/
+Frontend/**/.prerender/
 Frontend/**/build/
 Frontend/**/.cache/
 

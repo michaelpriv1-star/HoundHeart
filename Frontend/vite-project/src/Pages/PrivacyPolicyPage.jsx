@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import HoundHeartLogo from '../assets/images/Houndheart_logo.svg';
 import apiService from '../services/apiService';
+import useClientValue from '../hooks/useClientValue';
 
-const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) => {
+const PrivacyPolicyPage = ({ showFooter = true, initialTab = 'general' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(initialTab); // Use initialTab prop or default to Privacy Policy tab
-  const isAuthenticated = apiService.isAuthenticated() && !!apiService.getToken();
+  const isAuthenticated = useClientValue(() => apiService.isAuthenticated() && !!apiService.getToken(), false);
+  const registrationInProgress = useClientValue(() => sessionStorage.getItem('registrationInProgress') === 'true', false);
 
   // If the user is mid-registration (signup page or terms/privacy opened from it),
   // always send them back to /signup — never to /dashboard.
-  const inRegistrationFlow =
-    location.state?.from === 'signup' ||
-    sessionStorage.getItem('registrationInProgress') === 'true';
+  const inRegistrationFlow = location.state?.from === 'signup' || registrationInProgress;
   const homePath = inRegistrationFlow ? '/signup' : (isAuthenticated ? '/dashboard' : '/');
   const backLabel = inRegistrationFlow
     ? 'Back to Sign Up'
@@ -43,10 +43,6 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
     navigate(homePath);
   };
 
-  const handleAboutClick = () => {
-    navigate(homePath);
-  };
-
   const handleFooterNavigation = (path) => {
     if (inRegistrationFlow) {
       navigate(path, { state: { from: 'signup' } });
@@ -56,68 +52,8 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
     window.scrollTo(0, 0);
   };
 
-  const handleFeaturesClick = () => {
-    navigate(homePath);
-  };
-
-  const handleLogin = () => {
-    navigate(inRegistrationFlow ? '/signup' : (isAuthenticated ? '/dashboard' : '/login'));
-  };
-
   return (
     <div className="min-h-screen bg-purple-50">
-      {/* Header - only show if showHeaderFooter is true */}
-      {showHeaderFooter && (
-        <header className="bg-white shadow-sm border-b border-gray-100 py-4 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center">
-              {/* Left Side - Logo */}
-              <div className="flex items-center space-x-3 group cursor-pointer" onClick={handleHomeClick}>
-                <img
-                  src={HoundHeartLogo}
-                  alt="HoundHeart Logo"
-                  className="w-10 h-10 group-hover:scale-110 transition-transform duration-300"
-                />
-                <h1 className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors duration-300">HoundHeart™</h1>
-              </div>
-
-              {/* Center - Navigation - Hide on Terms of Use and Privacy Policy pages */}
-              {activeTab !== 'houndheart' && activeTab !== 'general' && (
-                <nav className="hidden md:flex space-x-8">
-                  <button
-                    onClick={handleAboutClick}
-                    className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 cursor-pointer relative group"
-                  >
-                    About
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300"></span>
-                  </button>
-                  <button
-                    onClick={handleFeaturesClick}
-                    className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 cursor-pointer relative group"
-                  >
-                    Features
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300"></span>
-                  </button>
-                </nav>
-              )}
-
-              {/* Right Side - Login/Register */}
-              <div className="flex items-center space-x-2 group">
-                <svg className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <button
-                  onClick={handleLogin}
-                  className="text-gray-700 hover:text-purple-600 font-medium transition-all duration-300 hover:scale-105"
-                >
-                  {isAuthenticated && !inRegistrationFlow ? 'Dashboard' : 'Login/Register'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-      )}
-
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Top Navigation Bar - Always Visible */}
@@ -186,7 +122,7 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
                     <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <h1 className="text-4xl font-bold text-purple-600 mb-4">Privacy Policy</h1>
+                <h2 className="text-4xl font-bold text-purple-600 mb-4">Privacy Policy</h2>
                 <p className="text-purple-500 text-lg">
                   Your privacy matters to us. Learn how we collect and handle your information.
                 </p>
@@ -465,8 +401,8 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
                     If you have questions about this Privacy Policy, please contact us:
                   </p>
                   <p className="text-gray-700"><strong>HoundHeart™ Privacy Team</strong></p>
-                  <p className="text-purple-600 underline">privacy@houndheart.com</p>
-                  <p className="text-purple-600 underline">www.houndheart.com</p>
+                  <p className="text-purple-600 underline"><a href="mailto:privacy@houndheartwellness.com">privacy@houndheartwellness.com</a></p>
+                  <p className="text-purple-600 underline"><a href="https://www.houndheartwellness.com">www.houndheartwellness.com</a></p>
                 </div>
               </div>
             </div>
@@ -496,7 +432,7 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
                     <path d="M9 15l3 3 6-6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <h1 className="text-4xl font-bold text-purple-600 mb-4">Terms of Use</h1>
+                <h2 className="text-4xl font-bold text-purple-600 mb-4">Terms of Use</h2>
                 <p className="text-gray-600 text-lg">
                   Please read these terms carefully. They govern your use of HoundHeart™ and protect both you and us.
                 </p>
@@ -651,8 +587,8 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
                   <p className="text-gray-700 mb-2">
                     If you have any questions about these Terms, please contact us:
                   </p>
-                  <p className="text-gray-700"><strong>Email:</strong> support@houndheart.com</p>
-                  <p className="text-gray-700"><strong>Website:</strong> www.houndheart.com</p>
+                  <p className="text-gray-700"><strong>Email:</strong> <a href="mailto:support@houndheartwellness.com">support@houndheartwellness.com</a></p>
+                  <p className="text-gray-700"><strong>Website:</strong> <a href="https://www.houndheartwellness.com">www.houndheartwellness.com</a></p>
                 </div>
               </div>
 
@@ -668,24 +604,24 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
         )}
       </div>
 
-      {/* Footer - only show if showHeaderFooter is true */}
-      {showHeaderFooter && (
+      {/* Footer - only show if showFooter is true */}
+      {showFooter && (
         <footer className="bg-black text-white py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Top Section */}
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-8 md:gap-0 mb-8">
               {/* Left Section - Branding and Social */}
               <div className="space-y-4">
                 {/* Logo and Brand */}
-                <div className="flex items-center space-x-3">
+                <Link to="/" className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
                     <img src={HoundHeartLogo} alt="HoundHeart Logo" className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">HoundHeart™</h3>
+                    <div className="text-xl font-bold text-white">HoundHeart™</div>
                     <p className="text-gray-300 text-sm">Heal the Bond, Not Just the Bark</p>
                   </div>
-                </div>
+                </Link>
 
                 {/* Social Media Icons */}
                 <div className="flex space-x-3">
@@ -713,9 +649,9 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
                 <div>
                   <h4 className="font-semibold mb-4 text-white">Company</h4>
                   <ul className="space-y-2 text-gray-300">
-                    <li><button onClick={() => handleFooterNavigation('/about-us')} className="hover:text-white transition-colors">About Us</button></li>
-                    <li><button onClick={() => handleFooterNavigation('/privacy-policy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
-                    <li><button onClick={() => handleFooterNavigation('/terms-of-use')} className="hover:text-white transition-colors">Terms of Service</button></li>
+                    <li><Link to="/about-us" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/about-us'); }} className="hover:text-white transition-colors">About Us</Link></li>
+                    <li><Link to="/privacy-policy" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/privacy-policy'); }} className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                    <li><Link to="/terms-of-use" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/terms-of-use'); }} className="hover:text-white transition-colors">Terms of Service</Link></li>
                   </ul>
                 </div>
 
@@ -723,9 +659,9 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
                 <div>
                   <h4 className="font-semibold mb-4 text-white">Support</h4>
                   <ul className="space-y-2 text-gray-300">
-                    <li><button onClick={() => handleFooterNavigation('/help-center')} className="hover:text-white transition-colors">Help Center</button></li>
-                    <li><a href="#" className="hover:text-white transition-colors">Healing Circles</a></li>
-                    <li><button onClick={() => handleFooterNavigation('/community-guidelines')} className="hover:text-white transition-colors">Community Guidelines</button></li>
+                    <li><Link to="/help-center" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/help-center'); }} className="hover:text-white transition-colors">Help Center</Link></li>
+                    <li><Link to="/community" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/community'); }} className="hover:text-white transition-colors">Healing Circles</Link></li>
+                    <li><Link to="/community-guidelines" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/community-guidelines'); }} className="hover:text-white transition-colors">Community Guidelines</Link></li>
                   </ul>
                 </div>
               </div>
@@ -737,12 +673,10 @@ const PrivacyPolicyPage = ({ showHeaderFooter = true, initialTab = 'general' }) 
             {/* Bottom Section */}
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-gray-300 text-sm mb-4 md:mb-0">
-                © 2025 HoundHeart™. All rights reserved. Heal the Bond, Not Just the Bark.
+                © {new Date().getFullYear()} HoundHeart™. All rights reserved. Heal the Bond, Not Just the Bark.
               </p>
               <div className="flex space-x-6">
-                <button onClick={() => handleFooterNavigation('/privacy-policy')} className="text-gray-300 hover:text-white text-sm transition-colors">Privacy Policy</button>
-                <a href="#" className="text-gray-300 hover:text-white text-sm transition-colors">Cookie Policy</a>
-                <button onClick={() => handleFooterNavigation('/terms-of-use')} className="text-gray-300 hover:text-white text-sm transition-colors">Terms and Conditions</button>
+                <Link to="/privacy-policy" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/privacy-policy'); }} className="text-gray-300 hover:text-white text-sm transition-colors">Cookie Policy</Link>
               </div>
             </div>
           </div>
