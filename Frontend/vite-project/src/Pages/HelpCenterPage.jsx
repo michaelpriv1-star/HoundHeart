@@ -21,8 +21,12 @@ const HelpCenterPage = () => {
     try {
       setLoadingFAQs(true);
       const response = await apiService.getAllFAQs();
+      const faqList = Array.isArray(response) ? response : response?.data;
+      if (!Array.isArray(faqList)) {
+        throw new Error('Invalid FAQ response');
+      }
       // Convert API response to match frontend format
-      const convertedFAQs = response.map(faq => ({
+      const convertedFAQs = faqList.map(faq => ({
         id: faq.faqId || faq.FAQId,
         question: faq.question,
         answer: faq.answer,
