@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import GreenLeaves from '../assets/images/green_leaves.png';
+import GreenLeaves from '../assets/images/green_leaves.webp';
 import apiService from '../services/apiService';
 import { useChakraProgress } from '../hooks/useChakraProgress';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/apiService';
-import forestHero from '../assets/images/legacy_forest_hero.png';
+import forestHero from '../assets/images/legacy_forest_hero.webp';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reusable sub-components — structured so admin-wired data can replace props later

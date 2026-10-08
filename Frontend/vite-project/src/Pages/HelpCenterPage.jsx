@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import HoundHeartLogo from '../assets/images/Houndheart_logo.svg';
 import apiService from '../services/apiService';
 
@@ -40,10 +40,6 @@ const HelpCenterPage = () => {
     }
   };
 
-  const handleBackToDashboard = () => {
-    navigate('/');
-  };
-
   const handleFooterNavigation = (path) => {
     navigate(path);
     window.scrollTo(0, 0);
@@ -51,29 +47,6 @@ const HelpCenterPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-100 py-3 sm:py-4">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={handleBackToDashboard}
-              className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-purple-600 transition-colors text-sm sm:text-base"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="hidden sm:inline">Back</span>
-            </button>
-            <button className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-purple-600 transition-colors text-sm sm:text-base">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="hidden sm:inline">Help Center</span>
-              <span className="sm:hidden">Help</span>
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -244,7 +217,7 @@ const HelpCenterPage = () => {
                   </div>
 
                   {/* Doctor Information */}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0 [overflow-wrap:anywhere]">
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Dr. Francisco Lopez-Jimenez, M.D.</h3>
                     <div className="space-y-1 mb-4">
                       <p className="text-gray-600 font-medium">Chair, Division of Preventive Cardiology, Mayo Clinic</p>
@@ -315,7 +288,7 @@ const HelpCenterPage = () => {
                   </div>
 
                   {/* Doctor Information */}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0 [overflow-wrap:anywhere]">
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Dr. Nicholas Breiten, M.D. & Dr. Mohamed Gouda, M.D.</h3>
                     <div className="space-y-1 mb-4">
                       <p className="text-gray-600 font-medium">Cardiologists, Mayo Clinic</p>
@@ -405,7 +378,7 @@ const HelpCenterPage = () => {
                   faqs.map((faq) => (
                     <div key={faq.id} className="flex space-x-4">
                       <div className="w-1 bg-purple-500 rounded-full flex-shrink-0"></div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0 [overflow-wrap:anywhere]">
                         <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{faq.question}</h3>
                         <p className="text-gray-600 leading-relaxed">
                           {faq.answer}
@@ -519,7 +492,7 @@ const HelpCenterPage = () => {
                       {/* Email Support */}
                       <div>
                         <h4 className="text-lg font-bold text-gray-900 mb-2">Email Support</h4>
-                        <p className="text-gray-600 text-sm sm:text-base">support@houndheart.com</p>
+                        <p className="text-gray-600 text-sm sm:text-base"><a href="mailto:support@houndheartwellness.com">support@houndheartwellness.com</a></p>
                       </div>
 
                       {/* Phone Support */}
@@ -693,41 +666,41 @@ const HelpCenterPage = () => {
             {/* Left Section - Branding and Social */}
             <div className="space-y-4 w-full lg:w-auto">
               {/* Logo and Brand */}
-              <div className="flex items-center space-x-3">
+              <Link to="/" className="flex items-center space-x-3">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center flex-shrink-0">
                   <img src={HoundHeartLogo} alt="HoundHeart Logo" className="w-6 h-6 sm:w-8 sm:h-8" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-white">HoundHeart™</h3>
+                  <div className="text-lg sm:text-xl font-bold text-white">HoundHeart™</div>
                   <p className="text-gray-300 text-xs sm:text-sm">Heal the Bond, Not Just the Bark</p>
                 </div>
-              </div>
+              </Link>
 
               {/* Social Media Icons */}
               <div className="flex space-x-3 sm:space-x-4">
                 {/* Facebook Icon */}
-                <a href="#" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on Facebook" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
                 </a>
 
                 {/* Twitter Icon */}
-                <a href="#" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on Twitter" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                   </svg>
                 </a>
 
                 {/* Instagram Icon */}
-                <a href="#" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on Instagram" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                   </svg>
                 </a>
 
                 {/* LinkedIn Icon */}
-                <a href="#" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
+                <a href="#" aria-label="HoundHeart on LinkedIn" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 hover:scale-110 shadow-lg">
                   <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
@@ -741,9 +714,9 @@ const HelpCenterPage = () => {
               <div className="w-full sm:w-auto">
                 <h4 className="font-semibold mb-3 sm:mb-4 text-white text-sm sm:text-base">Company</h4>
                 <ul className="space-y-2 text-gray-300">
-                  <li><button onClick={() => handleFooterNavigation('/about-us')} className="hover:text-white transition-colors text-sm sm:text-base">About Us</button></li>
-                  <li><button onClick={() => handleFooterNavigation('/privacy-policy')} className="hover:text-white transition-colors text-sm sm:text-base">Privacy Policy</button></li>
-                  <li><button onClick={() => handleFooterNavigation('/terms-of-use')} className="hover:text-white transition-colors text-sm sm:text-base">Terms of Service</button></li>
+                  <li><Link to="/about-us" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/about-us'); }} className="hover:text-white transition-colors text-sm sm:text-base">About Us</Link></li>
+                  <li><Link to="/privacy-policy" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/privacy-policy'); }} className="hover:text-white transition-colors text-sm sm:text-base">Privacy Policy</Link></li>
+                  <li><Link to="/terms-of-use" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/terms-of-use'); }} className="hover:text-white transition-colors text-sm sm:text-base">Terms of Service</Link></li>
                 </ul>
               </div>
 
@@ -751,9 +724,9 @@ const HelpCenterPage = () => {
               <div className="w-full sm:w-auto">
                 <h4 className="font-semibold mb-3 sm:mb-4 text-white text-sm sm:text-base">Support</h4>
                 <ul className="space-y-2 text-gray-300">
-                  <li><button onClick={() => handleFooterNavigation('/help-center')} className="hover:text-white transition-colors text-sm sm:text-base">Help Center</button></li>
-                  <li><a href="#" className="hover:text-white transition-colors text-sm sm:text-base">Healing Circles</a></li>
-                  <li><button onClick={() => handleFooterNavigation('/community-guidelines')} className="hover:text-white transition-colors text-sm sm:text-base">Community Guidelines</button></li>
+                  <li><Link to="/help-center" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/help-center'); }} className="hover:text-white transition-colors text-sm sm:text-base">Help Center</Link></li>
+                  <li><Link to="/community" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/community'); }} className="hover:text-white transition-colors text-sm sm:text-base">Healing Circles</Link></li>
+                  <li><Link to="/community-guidelines" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/community-guidelines'); }} className="hover:text-white transition-colors text-sm sm:text-base">Community Guidelines</Link></li>
                 </ul>
               </div>
             </div>
@@ -765,12 +738,10 @@ const HelpCenterPage = () => {
           {/* Bottom Section */}
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <p className="text-gray-300 text-xs sm:text-sm text-center sm:text-left">
-              © 2025 HoundHeart™. All rights reserved. Heal the Bond, Not Just the Bark.
+              © {new Date().getFullYear()} HoundHeart™. All rights reserved. Heal the Bond, Not Just the Bark.
             </p>
             <div className="flex flex-wrap justify-center sm:justify-end space-x-4 sm:space-x-6">
-              <button onClick={() => handleFooterNavigation('/privacy-policy')} className="text-gray-300 hover:text-white text-xs sm:text-sm transition-colors">Privacy Policy</button>
-              <a href="#" className="text-gray-300 hover:text-white text-xs sm:text-sm transition-colors">Cookie Policy</a>
-              <button onClick={() => handleFooterNavigation('/terms-of-use')} className="text-gray-300 hover:text-white text-xs sm:text-sm transition-colors">Terms and Conditions</button>
+              <Link to="/privacy-policy" onClick={(e) => { e.preventDefault(); handleFooterNavigation('/privacy-policy'); }} className="text-gray-300 hover:text-white text-xs sm:text-sm transition-colors">Cookie Policy</Link>
             </div>
           </div>
         </div>
