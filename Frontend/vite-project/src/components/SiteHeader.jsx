@@ -7,7 +7,7 @@ import useClientValue from '../hooks/useClientValue';
 export const OPEN_PRE_REGISTER_EVENT = 'houndheart:open-preregister';
 
 const GUEST_LINKS = [
-  { name: 'About', to: '/#about-section', sectionId: 'about-section' },
+  { name: 'About', to: '/about-us' },
   { name: 'Features', to: '/#transform-section', sectionId: 'transform-section' },
   { name: 'Online Pricing', to: '/#pricing-section', sectionId: 'pricing-section' },
   { name: 'Help Center', to: '/help-center' },
